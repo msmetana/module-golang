@@ -1,6 +1,7 @@
 package letter
 
 import (
+	//"fmt"
 	"reflect"
 	"testing"
 )
@@ -8,6 +9,8 @@ import (
 func TestConcurrentFrequency(t *testing.T) {
 	seq := Frequency(euro + dutch + us)
 	con := ConcurrentFrequency([]string{euro, dutch, us})
+	//fmt.Println("map 1 : ", seq)
+	//fmt.Println("map 2 : ", con)
 	if !reflect.DeepEqual(con, seq) {
 		t.Fatal("ConcurrentFrequency wrong result")
 	}
