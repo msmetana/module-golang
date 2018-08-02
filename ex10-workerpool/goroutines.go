@@ -28,18 +28,19 @@ func Worker(index int, jobs <-chan float64, wg *sync.WaitGroup) {
 
 func Run(poolSize int) {
 	var wg sync.WaitGroup
-	max_workers := 100
-	ch := make(chan float64, max_workers)
+	ch := make(chan float64, poolSize)
 
 	read := bufio.NewScanner(os.Stdin)
+	go func() {
+		for read.Scan() {
+			input := string(read.Bytes())
+			s, _ := strconv.ParseFloat(input, 64)
+			ch <- s
+		}
+		close(ch)
+	}()
 
-	for read.Scan() {
-		input := string(read.Bytes())
-		s, _ := strconv.ParseFloat(input, 64)
-		ch <- s
-	}
-	close(ch)
-
+	time.Sleep(100 * time.Millisecond)
 	for w := 1; w <= poolSize; w++ {
 		wg.Add(1)
 		go Worker(w, ch, &wg)
