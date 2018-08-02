@@ -1,10 +1,14 @@
 package orderbook
 
-import "sort"
+import (
+	"fmt"
+	"sort"
+)
 
 type Orderbook struct {
 	Ask []*Order
 	Bid []*Order
+	Mrt []*Order
 }
 
 func New() *Orderbook {
@@ -17,9 +21,9 @@ func (orderbook *Orderbook) Match(order *Order) ([]*Trade, *Order) {
 	tr := []*Trade{}
 	var or *Order
 	or = nil
-
 	switch order.Kind.String() {
 	case "MARKET":
+		//orderbook.Mrt = append(orderbook.Mrt, order)
 		orderbook.OrderMarket(order, &tr, &or)
 	case "LIMIT":
 		switch order.Side.String() {
@@ -30,6 +34,7 @@ func (orderbook *Orderbook) Match(order *Order) ([]*Trade, *Order) {
 		}
 	}
 
+	fmt.Println(or)
 	return tr, or
 }
 
@@ -37,40 +42,50 @@ func (orderbook *Orderbook) OrderdAsk(order *Order, tr *[]*Trade) {
 	flag := false
 
 	for _, bid := range orderbook.Bid {
+
+		fmt.Println(bid)
 		if order.Price <= bid.Price {
 			if order.Volume >= bid.Volume {
 				newtr := Trade{Volume: bid.Volume, Price: bid.Price}
 				*tr = append(*tr, &newtr)
+				fmt.Println("Trade new", newtr)
 				flag = true
 				order.Volume -= bid.Volume
 				bid.Volume = 0
-			}
+			} /*else {
+				newtr := Trade{Volume: order.Volume, Price: order.Price}
+				*tr = append(*tr, &newtr)
+				flag = true
+				order.Volume -= bid.Volume
+			}*/
 		}
 	}
-
 	if !flag {
 		index := sort.Search(len(orderbook.Ask), func(i int) bool { return orderbook.Ask[i].Price > order.Price })
 		orderbook.Ask = append(orderbook.Ask, order)
 		copy(orderbook.Ask[index+1:], orderbook.Ask[index:])
 		orderbook.Ask[index] = order
 
+		//fmt.Printf("asdasd")
 	}
 }
 
 func (orderbook *Orderbook) OrderdBid(order *Order, tr *[]*Trade) {
 	flag := false
-
 	for _, ask := range orderbook.Ask {
+		//fmt.Println(ask)
 		if ask.Price <= order.Price {
 			if ask.Volume <= order.Volume {
 				newtr := Trade{Volume: ask.Volume, Price: ask.Price}
 				*tr = append(*tr, &newtr)
+				//fmt.Println("Trade new", newtr)
 				flag = true
 				order.Volume -= ask.Volume
 				ask.Volume = 0
 			} else {
 				newtr := Trade{Volume: order.Volume, Price: ask.Price}
 				*tr = append(*tr, &newtr)
+				//fmt.Println("Trade new", newtr)
 				flag = true
 				ask.Volume -= order.Volume
 			}
@@ -88,18 +103,18 @@ func (orderbook *Orderbook) OrderMarket(order *Order, tr *[]*Trade, or **Order) 
 	switch order.Side.String() {
 	case "BID":
 		for _, ask := range orderbook.Ask {
-			if ask.Volume == 0 || order.Volume == 0 {
+			if ask.Volume == 0 {
 				continue
 			}
 			if ask.Volume <= order.Volume {
 				newtr := Trade{Volume: ask.Volume, Price: ask.Price}
 				*tr = append(*tr, &newtr)
+				//fmt.Println("Trade new", newtr)
 				order.Volume -= ask.Volume
 			} else {
 				newtr := Trade{Volume: order.Volume, Price: ask.Price}
 				*tr = append(*tr, &newtr)
-				ask.Volume -= order.Volume
-				order.Volume = 0
+				//order.Volume -= ask.Volume
 
 			}
 		}
@@ -107,19 +122,14 @@ func (orderbook *Orderbook) OrderMarket(order *Order, tr *[]*Trade, or **Order) 
 			*or = order
 		}
 	case "ASK":
-		newtr := Trade{}
 		for _, bid := range orderbook.Bid {
-			if bid.Volume == 0 || order.Volume == 0 {
+			if bid.Volume == 0 {
 				continue
 			}
 			if bid.Volume <= order.Volume {
-				newtr = Trade{Volume: bid.Volume, Price: bid.Price}
+				newtr := Trade{Volume: bid.Volume, Price: bid.Price}
 				*tr = append(*tr, &newtr)
-				order.Volume -= newtr.Volume
-			} else {
-				newtr = Trade{Volume: order.Volume, Price: bid.Price}
-				*tr = append(*tr, &newtr)
-				order.Volume = 0
+				order.Volume -= bid.Volume
 			}
 		}
 		if order.Volume > 0 {
